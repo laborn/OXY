@@ -1,0 +1,85 @@
+OXY Application
+========================================================
+author: LuAnn Born
+date: January 15, 2015
+autosize: true
+
+What the Application Can Do:
+========================================================
+Specific for Occidental Petroleum Corporation, it will predict the best day of the week to buy or sell OXY stock based on the month that is input by the user. It can be modified to do the same computations for any other stock or mutual fund. The historical data files can be found at http://finance.yahoo.com/q/hp?a=&b=&c=&d=0&e=14&f=2015&g=d&s=OXY&ql=1 for OXY.
+- Scroll down to the bottom of the page and click "Download to Spreadsheet" which creates a .csv file that can be read into the application.
+- To download a different stock or mutual fund enter the ticker into the box next to "Get Historical Prices for:"
+- Click "GO"
+
+January:
+========================================================
+
+```{r, echo=FALSE}
+oxy <- read.csv("oxy.csv")
+oxy <- as.data.frame(oxy[c(1, 5)])
+oxy$Date <- as.Date(oxy$Date)
+oxy$Day <- as.factor(weekdays(oxy$Date))
+oxy$Month <- as.factor(months(oxy$Date))
+i <- 1
+while ( i < nrow(oxy) ){
+        if ( oxy$Close[i] < oxy$Close[i+1] )
+                oxy$Change[i] <- "lower"
+        else if ( oxy$Close[i] == oxy$Close[i+1] )
+                oxy$Change[i] <- "same"
+        else
+                oxy$Change[i] <- "higher"
+        oxy$Percent[i] <- ((oxy$Close[i]-oxy$Close[i+1])/oxy$Close[i+1])*100
+        i <- i + 1
+}
+oxy$Change <- as.factor(oxy$Change)
+dayMeans <- aggregate(Percent ~ Day, oxy, mean)
+dayMax <- aggregate(Percent ~ Day, oxy, max)
+dayMin <- aggregate(Percent ~ Day, oxy, min)
+monthDayPercent <- aggregate(Percent ~ Day + Month, oxy, mean)
+monthDayPercent$Percent <- round(monthDayPercent$Percent, digits=2)
+subset(monthDayPercent, Month=="January")
+```
+For example, in January over the last 30+ years the average change for each day from the previous trading day is reflected in the Percent column. Based on the historical data the web application will tell what day of the week to buy or sell the stock given a particular month.
+
+Percent Change in Stock Price
+========================================================
+
+```{r, echo=FALSE}
+colors <- c("red", "orange", "blue", "yellow", "green")
+monthDayPercent$Day <- sub("Monday", "Mon", monthDayPercent$Day)
+monthDayPercent$Day <- sub("Tuesday", "Tue", monthDayPercent$Day)
+monthDayPercent$Day <- sub("Wednesday", "Wed", monthDayPercent$Day)
+monthDayPercent$Day <- sub("Thursday", "Thu", monthDayPercent$Day)
+monthDayPercent$Day <- sub("Friday", "Fri", monthDayPercent$Day)
+monthDayPercent$Day <- ordered(monthDayPercent$Day,
+        levels = c("Mon", "Tue","Wed", "Thu", "Fri"))
+monthDayPercent$Month <- sub("January", "Jan", monthDayPercent$Month)
+monthDayPercent$Month <- sub("February", "Feb", monthDayPercent$Month)
+monthDayPercent$Month <- sub("March", "Mar", monthDayPercent$Month)
+monthDayPercent$Month <- sub("April", "Apr", monthDayPercent$Month)
+monthDayPercent$Month <- sub("May", "May", monthDayPercent$Month)
+monthDayPercent$Month <- sub("June", "Jun", monthDayPercent$Month)
+monthDayPercent$Month <- sub("July", "Jul", monthDayPercent$Month)
+monthDayPercent$Month <- sub("August", "Aug", monthDayPercent$Month)
+monthDayPercent$Month <- sub("September", "Sep", monthDayPercent$Month)
+monthDayPercent$Month <- sub("October", "Oct", monthDayPercent$Month)
+monthDayPercent$Month <- sub("November", "Nov", monthDayPercent$Month)
+monthDayPercent$Month <- sub("December", "Dec", monthDayPercent$Month)
+monthDayPercent$Month <- ordered(monthDayPercent$Month,
+        levels = c("Jan", "Feb","Mar", "Apr", "May", "Jun", "Jul",
+                   "Aug", "Sep", "Oct", "Nov", "Dec"))
+ordered = monthDayPercent[with(monthDayPercent, order(Month, Day)),]
+data = matrix(ordered$Percent, ncol = 12, byrow = F)
+colnames(data) = levels(ordered$Month)
+rownames(data) = levels(ordered$Day)
+par(mar=c(4, 4, 4, 0.5), xpd=TRUE)
+barplot(data, col=colors, main="Daily Change by Month",
+        xlab="Month", ylab="Percent", beside=TRUE)
+legend("topright", inset = c(0.06, -0.01), fill = colors, legend = rownames(data))
+```
+Conclusion 
+========================================================
+As can be seen from the barplot of weekdays by month, there is a pattern month-by-month that shows it could be more beneficial to buy or sell on particular days of the week in particular months. For example, it appears from the data that it is better to buy on a Monday or Tuesday in June, July or September. In addition, the best days to sell would be Fridays in February, July or December. Each month shows the best days to buy or sell.
+
+While the differences from day-to-day might seem trivial the differences can add up to 1% for this particular stock on average. Fluctuations could be much more and might also be more pronounced on other stocks or funds.
+
